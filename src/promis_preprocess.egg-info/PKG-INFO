@@ -10,94 +10,108 @@ Requires-Dist: pandas>=1.5.0
 Requires-Dist: openpyxl>=3.0.0
 Requires-Dist: pyarrow>=10.0.0
 Requires-Dist: tqdm>=4.64.0
+Requires-Dist: PyYAML>=6.0.0
 
-# DICOM Processing Pipeline
+# PROMIS Dataset Preprocessing Pipeline
 
-A modular Python pipeline for processing DICOM medical imaging data with metadata extraction and analysis.
+A specialized Python pipeline for preprocessing and organizing the PROMIS (Prostate MR Image Segmentation) Open Access dataset for machine learning pipelines. This tool handles DICOM medical imaging data with comprehensive metadata extraction, series organization, and ML-ready data preparation.
+
+## About PROMIS Dataset
+
+The PROMIS dataset is a publicly available prostate MRI dataset designed for prostate cancer segmentation and analysis. It contains multi-parametric MRI sequences including T2-weighted, DWI (Diffusion-Weighted Imaging), and ADC (Apparent Diffusion Coefficient) images from multiple patients and studies.
+
+## Generalizability
+
+While specifically designed for the PROMIS dataset, this pipeline can be adapted for other DICOM datasets with minimal changes. The main requirement is an Excel file (`.xlsx`) that maps series descriptions from DICOM files to generic sequence labels (e.g., `t2_axial`, `dwi_b1400_axial`, `adc_axial`). This mapping file should contain:
+
+- **Patient ID**: Patient identifier
+- **Series Description**: Original series description from DICOM metadata
+- **Generic Sequence Label**: Standardized label for the sequence type
+
+This flexible approach allows the pipeline to work with various DICOM datasets by simply updating the mapping file and configuration parameters.
 
 ## Project Structure
 
 ```
 promis_preprocess/
-├── config.py                 # Configuration and constants
-├── dicom_processor.py         # Core DICOM processing functions
-├── metadata_extractor.py     # Metadata extraction utilities
-├── analysis_utils.py         # Analysis and reporting functions
-├── process_dicom.py          # Main processing script
-├── exploration.ipynb         # Jupyter notebook for interactive analysis
-├── requirements.txt          # Python dependencies
-└── README.md                 # This file
+├── config.yaml               # YAML configuration file
+├── src/promis_preprocess/    # Main package
+│   ├── config_loader.py      # YAML configuration loader
+│   ├── dicom_processing.py   # Core DICOM processing functions
+│   ├── metadata_extraction.py # Metadata extraction utilities
+│   └── analysis_utils.py     # Analysis and reporting functions
+├── scripts/                  # Processing scripts
+│   ├── process_studies.py    # Main study processing script
+│   └── organize_metadata.py  # Metadata organization script
+├── notebooks/                # Jupyter notebooks
+│   └── exploration.ipynb     # Interactive analysis notebook
+├── pyproject.toml           # Python dependencies
+└── README.md                # This file
 ```
 
-## Modules
+## Key Features
 
-### `config.py`
-- DICOM tag constants
-- Default configuration settings
+- **Multi-sequence Processing**: Handles T2-weighted, DWI, and ADC MRI sequences
+- **Series Organization**: Automatically organizes DICOM series by type and study
+- **Metadata Extraction**: Comprehensive extraction of DICOM metadata for ML pipelines
+- **Resampling & Alignment**: Resamples all sequences to a reference series for consistency
+- **ML-Ready Output**: Generates organized data structure suitable for machine learning
+- **Error Handling**: Robust error handling with detailed logging and reporting
+- **YAML Configuration**: Flexible configuration system for easy customization
 
-### `dicom_processor.py`
-- `create_dicom_reader()`: Creates and configures SimpleITK reader
-- `process_dicom_series()`: Processes a single DICOM series
-- `process_all_dicom_series()`: Orchestrates batch processing
+## Installation
 
-### `metadata_extractor.py`
-- `load_series_descriptions()`: Loads series descriptions from Excel
-- `extract_metadata_from_reader()`: Extracts metadata from DICOM reader
-- `save_metadata_to_parquet()`: Saves metadata to parquet format
+```bash
+# Clone the repository
+git clone <repository-url>
+cd promis_preprocess
 
-### `analysis_utils.py`
-- `analyze_processing_results()`: Analyzes processing statistics
-- `save_error_report()`: Saves error and warning reports
-- `analyze_sequence_distribution()`: Analyzes sequence distributions
-- `generate_summary_report()`: Generates comprehensive summary
+# Install dependencies
+pip install -e .
+```
 
 ## Usage
 
-### Command Line
+### 1. Configure the Pipeline
+
+Edit `config.yaml` to set your data paths and processing parameters:
+
+### 2. Process the Dataset
+
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Step 1: Organize metadata and extract DICOM information
+python scripts/organize_metadata.py
 
-# Run with default configuration
-python process_dicom.py
-
-# Run with custom paths
-python process_dicom.py /path/to/dicom/data /path/to/output
+# Step 2: Process studies and resample to reference series
+python scripts/process_studies.py
 ```
 
-### Jupyter Notebook
-```python
-# Import modules
-from dicom_processor import process_all_dicom_series
-from metadata_extractor import load_series_descriptions, save_metadata_to_parquet
-from analysis_utils import analyze_processing_results, save_error_report
+## Output Structure
 
-# Process data
-metadata, stats, error_paths, warning_paths = process_all_dicom_series(
-    config['DICOM_RAW_PATH'], 
-    series_descriptions
-)
+The pipeline generates an organized structure suitable for ML pipelines:
+
+```
+processed/
+├── patient_001/
+│   ├── study_001/
+│   │   ├── image_T2.mha      # T2-weighted image
+│   │   ├── image_DWI.mha     # DWI image 
+│   │   └── image_ADC.mha     # ADC image
+│   └── study_002/
+│       └── ...
+└── patient_002/
+    └── ...
+
+metadata/
+├── series_metadata.parquet    # Comprehensive metadata
+├── processing_log.txt         # Processing log
+└── summary_report.txt         # Summary statistics
 ```
 
-## Configuration
+## ML Pipeline Integration
 
-Edit `config.py` to modify:
-- DICOM tag mappings
-- Default file paths
-- Processing parameters
+The processed data is ready for machine learning pipelines:
 
-## Output Files
-
-The pipeline generates:
-- `series_metadata.parquet`: Main metadata file
-- `error_paths.txt`: List of failed processing paths
-- `warning_paths.txt`: List of paths with warnings
-- `processing_summary.txt`: Comprehensive summary report
-
-## Features
-
-- **Modular Design**: Clean separation of concerns
-- **Error Handling**: Robust error handling and reporting
-- **Progress Tracking**: Progress updates during processing
-- **Analysis Tools**: Built-in analysis and reporting functions
-- **Flexible Configuration**: Easy to customize for different datasets
+- **Consistent Format**: All images resampled to same resolution
+- **Organized Structure**: Patient/Study hierarchy for easy data loading
+- **Standard Formats**: MHA format compatible with medical imaging libraries

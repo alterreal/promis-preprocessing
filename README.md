@@ -1,10 +1,10 @@
 # PROMIS Dataset Preprocessing Pipeline
 
-A specialized Python pipeline for preprocessing and organizing the PROMIS (Prostate MR Image Segmentation) Open Access dataset for machine learning pipelines. This tool handles DICOM medical imaging data with comprehensive metadata extraction, series organization, and ML-ready data preparation.
+A specialized Python pipeline for preprocessing and organizing the [PROMIS (Prostate MR Image Segmentation)](https://www.reimagine-pca.org/about-7) Open Access dataset for machine learning pipelines. This tool handles DICOM medical imaging data with metadata extraction, series organization, and ML-ready data preparation.
 
 ## About PROMIS Dataset
 
-The PROMIS dataset is a publicly available prostate MRI dataset designed for prostate cancer segmentation and analysis. It contains multi-parametric MRI sequences including T2-weighted, DWI (Diffusion-Weighted Imaging), and ADC (Apparent Diffusion Coefficient) images from multiple patients and studies.
+The PROMIS dataset is a prostate MRI dataset designed for prostate cancer segmentation and analysis, available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from multiple patients and studies.
 
 ## Generalizability
 
@@ -13,8 +13,6 @@ While specifically designed for the PROMIS dataset, this pipeline can be adapted
 - **Patient ID**: Patient identifier
 - **Series Description**: Original series description from DICOM metadata
 - **Generic Sequence Label**: Standardized label for the sequence type
-
-This flexible approach allows the pipeline to work with various DICOM datasets by simply updating the mapping file and configuration parameters.
 
 ## Project Structure
 

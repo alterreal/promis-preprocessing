@@ -4,7 +4,7 @@ A specialized Python pipeline for preprocessing and organizing the [PROMIS (Pros
 
 ## About PROMIS Dataset
 
-The PROMIS dataset is a prostate MRI dataset designed for prostate cancer segmentation and analysis, available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from multiple patients and studies.
+The PROMIS dataset is a prostate MRI dataset available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from multiple patients.
 
 ## Generalizability
 

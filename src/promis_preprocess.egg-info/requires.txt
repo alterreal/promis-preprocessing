@@ -1,0 +1,5 @@
+SimpleITK>=2.3.0
+pandas>=1.5.0
+openpyxl>=3.0.0
+pyarrow>=10.0.0
+tqdm>=4.64.0

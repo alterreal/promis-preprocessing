@@ -1,0 +1,103 @@
+Metadata-Version: 2.4
+Name: promis-preprocess
+Version: 0.1.0
+Summary: PROMIS DICOM preprocessing pipeline
+Author-email: Alexandre Calado <alexandreluiscalado@gmail.com>
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: SimpleITK>=2.3.0
+Requires-Dist: pandas>=1.5.0
+Requires-Dist: openpyxl>=3.0.0
+Requires-Dist: pyarrow>=10.0.0
+Requires-Dist: tqdm>=4.64.0
+
+# DICOM Processing Pipeline
+
+A modular Python pipeline for processing DICOM medical imaging data with metadata extraction and analysis.
+
+## Project Structure
+
+```
+promis_preprocess/
+├── config.py                 # Configuration and constants
+├── dicom_processor.py         # Core DICOM processing functions
+├── metadata_extractor.py     # Metadata extraction utilities
+├── analysis_utils.py         # Analysis and reporting functions
+├── process_dicom.py          # Main processing script
+├── exploration.ipynb         # Jupyter notebook for interactive analysis
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
+```
+
+## Modules
+
+### `config.py`
+- DICOM tag constants
+- Default configuration settings
+
+### `dicom_processor.py`
+- `create_dicom_reader()`: Creates and configures SimpleITK reader
+- `process_dicom_series()`: Processes a single DICOM series
+- `process_all_dicom_series()`: Orchestrates batch processing
+
+### `metadata_extractor.py`
+- `load_series_descriptions()`: Loads series descriptions from Excel
+- `extract_metadata_from_reader()`: Extracts metadata from DICOM reader
+- `save_metadata_to_parquet()`: Saves metadata to parquet format
+
+### `analysis_utils.py`
+- `analyze_processing_results()`: Analyzes processing statistics
+- `save_error_report()`: Saves error and warning reports
+- `analyze_sequence_distribution()`: Analyzes sequence distributions
+- `generate_summary_report()`: Generates comprehensive summary
+
+## Usage
+
+### Command Line
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run with default configuration
+python process_dicom.py
+
+# Run with custom paths
+python process_dicom.py /path/to/dicom/data /path/to/output
+```
+
+### Jupyter Notebook
+```python
+# Import modules
+from dicom_processor import process_all_dicom_series
+from metadata_extractor import load_series_descriptions, save_metadata_to_parquet
+from analysis_utils import analyze_processing_results, save_error_report
+
+# Process data
+metadata, stats, error_paths, warning_paths = process_all_dicom_series(
+    config['DICOM_RAW_PATH'], 
+    series_descriptions
+)
+```
+
+## Configuration
+
+Edit `config.py` to modify:
+- DICOM tag mappings
+- Default file paths
+- Processing parameters
+
+## Output Files
+
+The pipeline generates:
+- `series_metadata.parquet`: Main metadata file
+- `error_paths.txt`: List of failed processing paths
+- `warning_paths.txt`: List of paths with warnings
+- `processing_summary.txt`: Comprehensive summary report
+
+## Features
+
+- **Modular Design**: Clean separation of concerns
+- **Error Handling**: Robust error handling and reporting
+- **Progress Tracking**: Progress updates during processing
+- **Analysis Tools**: Built-in analysis and reporting functions
+- **Flexible Configuration**: Easy to customize for different datasets

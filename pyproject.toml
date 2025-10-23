@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promis-preprocess"
+version = "0.1.0"
+description = "PROMIS DICOM preprocessing pipeline"
+authors = [
+    {name = "Alexandre Calado", email = "alexandreluiscalado@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "SimpleITK>=2.3.0",
+    "pandas>=1.5.0",
+    "openpyxl>=3.0.0",
+    "pyarrow>=10.0.0",
+    "tqdm>=4.64.0",
+    "PyYAML>=6.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]

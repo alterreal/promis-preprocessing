@@ -1,0 +1,34 @@
+# Configuration for DICOM processing
+
+# DICOM Tag Constants
+dicom_tags:
+  patient_id: "0010|0020"
+  study_id: "0020|000d"
+  series_id: "0020|000e"
+  scanner_type: "0008|0060"
+  scanner_manufacturer: "0008|0070"
+  scanner_model: "0008|1090"
+  magnetic_field_strength: "0018|0087"
+  series_description: "0008|103e"
+
+# Default paths
+paths:
+  series_descriptions: "/storage/data/PROMIS/PROMISseriesdescriptions.xlsx"
+  dicom_raw: "/storage/data/PROMIS/dicom_raw/"
+  dicom_processed: "/storage/data/PROMIS/processed/"
+  metadata: "/storage/data/PROMIS/metadata/"
+
+# Series to process
+series_to_process:
+  t2_axial: "T2"
+  dwi_b1400_axial: "DWI"
+  adc_axial: "ADC"
+
+# For nnUNet training, we need to map the series to a number
+nnunet_series_dict:
+  t2_axial: "0000"
+  dwi_b1400_axial: "0001"
+  adc_axial: "0002"
+
+# Reference series for resampling
+reference_series: "t2_axial"

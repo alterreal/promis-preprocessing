@@ -37,13 +37,11 @@ promis_preprocess/
 
 ## Key Features
 
-- **Multi-sequence Processing**: Handles T2-weighted, DWI, and ADC MRI sequences
+- **Multi-sequence Processing**: Handles pre-selected MRI sequences
 - **Series Organization**: Automatically organizes DICOM series by type and study
 - **Metadata Extraction**: Comprehensive extraction of DICOM metadata for ML pipelines
-- **Resampling & Alignment**: Resamples all sequences to a reference series for consistency
+- **Resampling**: Resamples all sequences to a reference series for consistency
 - **ML-Ready Output**: Generates organized data structure suitable for machine learning
-- **Error Handling**: Robust error handling with detailed logging and reporting
-- **YAML Configuration**: Flexible configuration system for easy customization
 
 ## Installation
 
@@ -60,7 +58,20 @@ pip install -e .
 
 ### 1. Configure the Pipeline
 
-Edit `config.yaml` to set your data paths and processing parameters:
+You can customize which MRI sequences to process and which one to use as the reference for resampling in the `config.yaml`:
+
+```yaml
+
+# Series to process - customize which sequences you want
+series_to_process:
+  t2_axial: "T2"
+  dwi_b1400_axial: "DWI"
+  adc_axial: "ADC"
+  # Add or remove sequences as needed for your dataset
+
+# Reference series for resampling - choose which sequence to use as reference
+reference_series: "t2_axial"
+```
 
 ### 2. Process the Dataset
 

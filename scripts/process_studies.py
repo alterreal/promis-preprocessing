@@ -38,7 +38,7 @@ def select_single_series_per_type(metadata):
     return pd.DataFrame(res)
 
 
-def process_and_save_studies(metadata, series_to_process, reference_series, paths_config):
+def process_and_save_studies(metadata, series_to_process, reference_series, paths_config, nnunet_output=False):
     """
     Processes and saves Medical Format images for each study in the provided metadata DataFrame.
     The reference series is used to resample all others.
@@ -49,19 +49,29 @@ def process_and_save_studies(metadata, series_to_process, reference_series, path
                                        desc="Processing studies"):
         # Prepare save path
         patient_id = study_metadata.iloc[0]['patient_id']
-        save_path = os.path.join(
-            paths_config['dicom_processed'], f"{patient_id}/{study_id}/"
-        )
-        os.makedirs(save_path, exist_ok=True)
-
+        
         # Load reference image
         ref_row = study_metadata[study_metadata['generic_sequence_label'] == reference_series].iloc[0]
         reference_series_path = os.path.join(paths_config['dicom_raw'], ref_row['folder_path'])
         ref_reader = create_dicom_reader()
         reference_image = load_dicom_image_from_folder(ref_reader, reference_series_path)
 
+        # Decide output directory based on format
+        if nnunet_output:
+            base_output_dir = paths_config['nnunet_output']
+            os.makedirs(base_output_dir, exist_ok=True)
+            def make_filename(series_key):
+                return f"{study_id}_{config['nnunet_series_dict'][series_key]}.mha"
+        else:
+            base_output_dir = os.path.join(
+                paths_config['dicom_processed'], f"{patient_id}/{study_id}/"
+                )
+            os.makedirs(base_output_dir, exist_ok=True)
+            def make_filename(series_key):
+                return f"image_{series_to_process[series_key]}.mha"
+
         # Save reference image
-        ref_output_path = os.path.join(save_path, f"image_{series_to_process[reference_series]}.mha")
+        ref_output_path = os.path.join(base_output_dir, make_filename(reference_series))
         sitk.WriteImage(reference_image, ref_output_path)
 
         # Set up resampler with specified reference image and interpolator
@@ -81,7 +91,7 @@ def process_and_save_studies(metadata, series_to_process, reference_series, path
             resampled_image = resample.Execute(add_image)
 
             # Save resampled image
-            add_output_path = os.path.join(save_path, f"image_{series_to_process[seq_type]}.mha")
+            add_output_path = os.path.join(base_output_dir, make_filename(seq_type))
             sitk.WriteImage(resampled_image, add_output_path)
 
 
@@ -94,6 +104,9 @@ def main():
                        help='Override processed output path')
     parser.add_argument('--raw-path', 
                        help='Override DICOM raw path')
+    parser.add_argument('--nnunet-output', 
+                       action='store_true',
+                       help='If set, output in nnUNet format')
     
     args = parser.parse_args()
     
@@ -111,7 +124,10 @@ def main():
     print("Starting DICOM study processing...")
     print(f"Metadata path: {config_dict['metadata']}")
     print(f"DICOM raw path: {config_dict['dicom_raw']}")
-    print(f"Processed output path: {config_dict['dicom_processed']}")
+    if args.nnunet_output:
+        print(f"nnUNet output: {config_dict['nnunet_output']}")
+    else:
+        print(f"Processed output path: {config_dict['dicom_processed']}")
     print(f"Reference series: {config['reference_series']}")
     print(f"Series to process: {list(config['series_to_process'].keys())}")
     
@@ -130,10 +146,10 @@ def main():
         print("Available series types:")
         print(metadata['generic_sequence_label'].value_counts())
         return
-    
+
     # Process and save studies
     print("Processing studies...")
-    process_and_save_studies(metadata_filtered, config['series_to_process'], config['reference_series'], config_dict)
+    process_and_save_studies(metadata_filtered, config['series_to_process'], config['reference_series'], config_dict, nnunet_output=args.nnunet_output)
     
     print("Processing completed successfully!")
 

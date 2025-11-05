@@ -16,13 +16,16 @@ paths:
   series_descriptions: "/storage/data/PROMIS/PROMISseriesdescriptions.xlsx"
   dicom_raw: "/storage/data/PROMIS/dicom_raw/"
   dicom_processed: "/storage/data/PROMIS/processed/"
+  nnunet_output: "/storage/data/PROMIS/nnunet/nnUNet_raw/Dataset051_ProstateAllZones/imagesTs/"
   metadata: "/storage/data/PROMIS/metadata/"
+  mri_crf: "/storage/data/PROMIS/resources/additional_data/OA_575 complete patients/OA_575 complete patients/MRI Data/PROMIS_OA_MRICRF_Downloaded04Feb2020.xlsx"
+  tpm_crf_folder: "/storage/data/PROMIS/resources/additional_data/OA_575 complete patients/OA_575 complete patients/TPM Data"
 
 # Series to process
 series_to_process:
   t2_axial: "T2"
-  dwi_b1400_axial: "DWI"
-  adc_axial: "ADC"
+  #dwi_b1400_axial: "DWI"
+  #adc_axial: "ADC"
 
 # For nnUNet training, we need to map the series to a number
 nnunet_series_dict:

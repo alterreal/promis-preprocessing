@@ -1,6 +1,0 @@
-DICOM Processing Log - Started at 2026-06-11 14:47:41
-==================================================
-
-[2026-06-11 14:47:46] WARNING: /storage/data/PROMIS/dicom_raw/P-94457567/P-94457567/21/DICOM contains 26 DICOM files, but loaded series has 25 slices
-[2026-06-11 14:47:54] WARNING: /storage/data/PROMIS/dicom_raw/P-86654978/P-86654978/17/DICOM contains 44 DICOM files, but loaded series has 43 slices
-[2026-06-11 14:57:03] WARNING: /storage/data/PROMIS/dicom_raw/P-45287370/P-45287370/6/DICOM contains 18 DICOM files, but loaded series has 17 slices

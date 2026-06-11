@@ -1,10 +1,14 @@
 # PROMIS Dataset Preprocessing Pipeline
 
-A specialized Python pipeline for preprocessing and organizing the [PROMIS (Prostate MR Image Segmentation)](https://www.reimagine-pca.org/about-7) Open Access dataset for machine learning pipelines. This tool handles DICOM medical imaging data with metadata extraction, series organization, and ML-ready data preparation.
+This is a simple Python pipeline for preprocessing the [PROMIS (Prostate MR Image Segmentation)](https://www.reimagine-pca.org/about-7) dataset. It handles DICOM medical imaging data with metadata extraction, series organization, ML-ready data preparation and lesion location priori extraction from MRI and TPM CRFs. 
 
 ## About PROMIS Dataset
 
-The PROMIS dataset is a prostate MRI dataset available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from multiple patients.
+The PROMIS dataset is a prostate MRI dataset available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from 575 patients.
+
+## About the Location Priori
+
+Lesion location priori computation depend on the availability of prostate zone segmentation masks, which are not provided here. If provided, the location priori will be extracted according to both MRI and TPM CRFs, separately. Although lesion location is defined in the TPM CRF according to Barzell Zones, the extracted priori are defined according to the PI-RADS v2 sectors affected by the lesion. The conversion from Barzell zones to PI-RADS sectors is done according to the mapping proposed by [Satish et al. (2021)](https://doi.org/10.1016/j.eururo.2021.05.017). Because the Barzell zonal system does not distinguish the mid-gland as a separate axial region, the resulting PI-RADS sectors are assigned only to either the apex or the base, effectively splitting the gland along a halved axial axis.
 
 ## Generalizability
 
@@ -13,33 +17,6 @@ While specifically designed for the PROMIS dataset, this pipeline can be adapted
 - **Patient ID**: Patient identifier
 - **Series Description**: Original series description from DICOM metadata
 - **Generic Sequence Label**: Standardized label for the sequence type
-
-## Project Structure
-
-```
-promis_preprocess/
-├── config.yaml               # YAML configuration file
-├── src/promis_preprocess/    # Main package
-│   ├── config_loader.py      # YAML configuration loader
-│   ├── dicom_processing.py   # Core DICOM processing functions
-│   ├── metadata_extraction.py # Metadata extraction utilities
-│   └── analysis_utils.py     # Analysis and reporting functions
-├── scripts/                  # Processing scripts
-│   ├── process_studies.py    # Main study processing script
-│   └── organize_metadata.py  # Metadata organization script
-├── notebooks/                # Jupyter notebooks
-│   └── exploration.ipynb     # Interactive analysis notebook
-├── pyproject.toml           # Python dependencies
-└── README.md                # This file
-```
-
-## Key Features
-
-- **Multi-sequence Processing**: Handles pre-selected MRI sequences
-- **Series Organization**: Automatically organizes DICOM series by type and study
-- **Metadata Extraction**: Comprehensive extraction of DICOM metadata for ML pipelines
-- **Resampling**: Resamples all sequences to a reference series for consistency
-- **ML-Ready Output**: Generates organized data structure suitable for machine learning
 
 ## Installation
 
@@ -56,9 +33,9 @@ pip install -e .
 
 ### 1. Configure the Pipeline
 
-You can customize which MRI sequences to process and which one to use as the reference for resampling in the `config.yaml`:
+Edit `config.yaml` to point the pipeline at your data and outputs. All paths are relative to `paths.root`, except where an absolute path is provided as an argument
 
-```yaml
+You can also customize which MRI sequences to process and which one to use as the reference for resampling:
 
 # Series to process - customize which sequences you want
 series_to_process:
@@ -74,16 +51,22 @@ reference_series: "t2_axial"
 ### 2. Process the Dataset
 
 ```bash
-# Step 1: Organize metadata and extract DICOM information
-python scripts/organize_metadata.py
+# Step 1: Extract metadata from DICOM seriea
+python scripts/extract_metadata.py
 
-# Step 2: Process studies and resample to reference series
+# Step 2: Process studies with all the selected sequences and resample to reference series
 python scripts/process_studies.py
+
+# Step 3: Compute location priori (using PI-RADS v2 sectors) of clinically significant lesions (ISUP ≥ 2) according to MRI and TPM CRFs. 
+python scripts/compute_location_priori.py --lesion-type cspca
+
+# in case you want to extract the location priori for ISUP ≥ 1 lesions
+python scripts/compute_location_priori.py --lesion-type pca
 ```
 
 ## Output Structure
 
-The pipeline generates an organized structure suitable for ML pipelines:
+process_studies.py generates an organized structure suitable for ML pipelines:
 
 ```
 processed/
@@ -99,14 +82,7 @@ processed/
 
 metadata/
 ├── series_metadata.parquet    # Comprehensive metadata
-├── processing_log.txt         # Processing log
-└── summary_report.txt         # Summary statistics
+├── lesion_pca_metadata.txt         # Metadata for ISUP ≥ 1 lesions
+└── lesion_cspca_metadata.txt         # Metadata for ISUP ≥ 2 lesions
 ```
 
-## ML Pipeline Integration
-
-The processed data is ready for machine learning pipelines:
-
-- **Consistent Format**: All images resampled to same resolution
-- **Organized Structure**: Patient/Study hierarchy for easy data loading
-- **Standard Formats**: MHA format compatible with medical imaging libraries

@@ -28,7 +28,7 @@ def select_single_series_per_type(metadata, series_to_process):
         if set(found_types) == set(series_types):
             for seq_type in series_types:
                 seq_group = group[group['generic_sequence_label'] == seq_type]
-                # RULE: choose the last one (can adapt: e.g., latest, largest, etc)
+                # RULE: choose the last one (can adapt: e.g., first)
                 selected = seq_group.iloc[-1]
                 res.append(selected)
     

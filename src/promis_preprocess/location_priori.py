@@ -3,6 +3,12 @@ import pandas as pd
 import cc3d
 from scipy.ndimage import distance_transform_edt
 from skimage.morphology import remove_small_holes
+import os
+import SimpleITK as sitk
+from tqdm import tqdm
+from .metadata_extraction import get_isup_grade
+from .study_processing import select_single_series_per_type
+
 
 def get_mask_centroid_3d(mask):
     """Returns a tuple containing the centroid of a 
@@ -343,3 +349,210 @@ def adjust_lesion_zones(row):
         return lesions  # unknown value; leave as-is
 
     return [dict({**d, 'l_zone': zone}) for d in lesions]
+
+
+def load_mri_crf(mri_crf_path):
+    mri_crf = pd.read_excel(mri_crf_path)
+    return mri_crf[mri_crf["FormCycle"] == 1].copy()
+
+
+def build_mri_crf_patient(mri_crf, config):
+    
+    mri_crf_patient = mri_crf.groupby("patientID").first()
+    sector_mapping = config["sector_mapping"]
+
+    mri_crf_patient["lesion_location_mri"] = mri_crf_patient.apply(
+        get_lesion_sectors_mri, axis=1, args=(sector_mapping, 3)
+    )
+
+    for patient_id, patient_data in mri_crf.groupby("patientID"):
+        mri_crf_patient.at[patient_id, "affected_zones"] = determine_zone(
+            patient_data["les_zone"]
+        )
+
+    mri_crf_patient["lesion_location_mri"] = mri_crf_patient.apply(
+        adjust_lesion_zones, axis=1
+    )
+    return mri_crf_patient
+
+
+def load_tpm_crf(tpm_crf_folder, config, isup_thres, label_type):
+    all_tpm_data = []
+    tpm_zone_files = config["tpm_zone_files"]
+
+    for file in tpm_zone_files:
+        tpm_crf_path = tpm_crf_folder / file
+        tpm_crf = pd.read_excel(tpm_crf_path)
+        tpm_crf.set_index("patientID", inplace=True)
+        tpm_crf.drop(
+            columns=[
+                "Trial",
+                "Site",
+                "VisitCycle",
+                "FormCycle",
+                "PersonId",
+                "RepeatNumber",
+            ],
+            inplace=True,
+        )
+
+        num_cols = tpm_crf.shape[1]
+        df_1 = tpm_crf.iloc[:, : int(num_cols / 2)]
+        df_2 = tpm_crf.iloc[:, int(num_cols / 2) :]
+
+        if file == tpm_zone_files[0]:
+            df_1.rename(columns={"patientID.1": "d_patid"}, inplace=True)
+
+        df_2.columns = df_1.columns
+        all_tpm_data.append(pd.concat([df_1, df_2], axis=0))
+
+    tpm_crf = pd.concat(all_tpm_data, axis=0)
+    tpm_crf["isup"] = tpm_crf.apply(
+        lambda row: get_isup_grade(row["zprim1"], row["zseco1"]), axis=1
+    )
+    tpm_crf["positive_lesion"] = tpm_crf["isup"] >= isup_thres
+    tpm_crf[f"case_{label_type.lower()}"] = tpm_crf.groupby(level=0)["positive_lesion"].any()
+    return tpm_crf
+
+
+def add_tpm_lesion_locations(mri_crf_patient, tpm_crf, barzell_to_pirads_map, isup_thres, label_type):
+    for patient_id, patient_data in tpm_crf.groupby(level=0):
+        sectors = [
+            sector
+            for _, zone in patient_data.iterrows()
+            if pd.notna(zone["isup"]) and zone["isup"] >= isup_thres
+            for sector in barzell_to_pirads_map[zone["d_zone"]]
+        ]
+        mri_crf_patient.at[patient_id, "lesion_location_tpm"] = sectors if sectors else None
+        mri_crf_patient.at[patient_id, f"case_{label_type.lower()}"] = patient_data[f"case_{label_type.lower()}"].any()
+
+
+def load_series_metadata(metadata_path, config):
+    series_metadata = pd.read_parquet(metadata_path)
+    series_metadata.set_index("patient_id", inplace=True)
+    return select_single_series_per_type(series_metadata, config["series_to_process"])
+
+
+def load_tpm_crf_summary(tpm_crf_summary_path, series_metadata, isup_thres, label_type):
+    tpm_crf_summary = pd.read_excel(tpm_crf_summary_path)
+    tpm_crf_summary.set_index("patientID", inplace=True)
+    tpm_crf_summary["isup"] = tpm_crf_summary.apply(
+        lambda row: get_isup_grade(row["sumal1"], row["sumal2"]), axis=1
+    )
+    tpm_crf_summary[f"case_{label_type.lower()}"] = tpm_crf_summary["isup"] >= isup_thres
+
+    print(
+        f"The summary TPM CRF contains {len(tpm_crf_summary)} patients, "
+        f"of which {tpm_crf_summary[f'case_{label_type.lower()}'].sum()} have a {label_type} lesion"
+    )
+
+    tpm_crf_summary = tpm_crf_summary.loc[series_metadata.index.unique()]
+    print(
+        f"After discarding cases without all sequences, the summary TPM CRF contains "
+        f"{len(tpm_crf_summary)} patients, of which "
+        f"{tpm_crf_summary[f'case_{label_type.lower()}'].sum()} have a {label_type} lesion"
+    )
+    return tpm_crf_summary
+
+
+def merge_case_labels(mri_crf_patient, series_metadata, tpm_crf_summary, label_type):
+    mri_crf_patient = mri_crf_patient.loc[series_metadata.index.unique()]
+    mask = mri_crf_patient[f"case_{label_type.lower()}"].isna() & (tpm_crf_summary[f"case_{label_type.lower()}"] == False)
+    mri_crf_patient.loc[mask, f"case_{label_type.lower()}"] = tpm_crf_summary.loc[mask, f"case_{label_type.lower()}"]
+
+    print(
+        f"Dropping {pd.isna(mri_crf_patient[f'case_{label_type.lower()}']).sum()} {label_type} "
+        "cases with no detailed TPM CRF data"
+    )
+    mri_crf_patient.dropna(subset=[f"case_{label_type.lower()}"], inplace=True)
+    return mri_crf_patient
+
+
+def compute_location_priors(
+    mri_crf_patient,
+    dicom_processed,
+    zonal_masks,
+    location_priori_mri,
+    location_priori_tpm,
+    config,
+):
+    location_priori_mri.mkdir(parents=True, exist_ok=True)
+    location_priori_tpm.mkdir(parents=True, exist_ok=True)
+
+    discarded_cases = []
+    for p_id in tqdm(mri_crf_patient.index, desc="Computing location priors"):
+        try:
+            study_uid = os.listdir(dicom_processed / p_id)[0]
+            mri_crf_patient.loc[p_id, "study_uid"] = study_uid
+
+            filepath_t2 = (
+                dicom_processed
+                / p_id
+                / study_uid
+                / f"image_{config['series_to_process']['t2_axial']}.mha"
+            )
+            filepath_mask = zonal_masks / f"{study_uid}.mha"
+
+            t2_img = sitk.ReadImage(str(filepath_t2))
+            mask_img = sitk.ReadImage(str(filepath_mask))
+
+            mask_arr = sitk.GetArrayFromImage(mask_img)
+            mask_tz_cz_arr = (mask_arr == 1).astype(np.uint8)
+            mask_pz_arr = (mask_arr == 2).astype(np.uint8)
+            mask_tz_cz_arr, mask_pz_arr, mask_prostate_arr = merge_zonal_masks(
+                mask_tz_cz_arr, mask_pz_arr
+            )
+
+            sector_list_mri = mri_crf_patient.loc[p_id].lesion_location_mri
+            sector_list_tpm = mri_crf_patient.loc[p_id].lesion_location_tpm
+
+            if isinstance(sector_list_mri, list):
+                mask_lesion_mri = get_reported_lesion_mask(
+                    mask_prostate_arr,
+                    mask_tz_cz_arr,
+                    mask_pz_arr,
+                    sector_list_mri,
+                )
+            else:
+                mask_lesion_mri = np.zeros_like(mask_prostate_arr)
+
+            if isinstance(sector_list_tpm, list):
+                mask_lesion_tpm = get_reported_lesion_mask(
+                    mask_prostate_arr,
+                    mask_tz_cz_arr,
+                    mask_pz_arr,
+                    sector_list_tpm,
+                    region_div_method="barzell",
+                )
+            else:
+                mask_lesion_tpm = np.zeros_like(mask_prostate_arr)
+
+            _, cc_count_mri = get_connected_components(mask_lesion_mri, connectivity=6)
+            _, cc_count_tpm = get_connected_components(mask_lesion_tpm, connectivity=6)
+
+            mri_crf_patient.loc[p_id, "cc_count_mri"] = cc_count_mri
+            mri_crf_patient.loc[p_id, "cc_count_tpm"] = cc_count_tpm
+
+            mask_lesion_mri_arr = sitk.GetImageFromArray(mask_lesion_mri)
+            mask_lesion_tpm_arr = sitk.GetImageFromArray(mask_lesion_tpm)
+            mask_lesion_mri_arr.CopyInformation(t2_img)
+            mask_lesion_tpm_arr.CopyInformation(t2_img)
+
+            sitk.WriteImage(mask_lesion_mri_arr, str(location_priori_mri / f"{study_uid}.mha"))
+            sitk.WriteImage(mask_lesion_tpm_arr, str(location_priori_tpm / f"{study_uid}.mha"))
+
+        except Exception:
+            discarded_cases.append(p_id)
+            continue
+
+    print(f"{len(discarded_cases)} cases were not found in the DICOM processed folder")
+    return mri_crf_patient
+
+
+def save_lesion_metadata(mri_crf_patient, metadata_dir, label_type):
+    mri_crf_patient.dropna(subset=["study_uid"], inplace=True)
+    mri_crf_patient.reset_index(inplace=True, drop=False, names=["patient_id"])
+    output_path = metadata_dir / f"lesion_{label_type}_metadata.csv"
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    mri_crf_patient.to_csv(output_path, index=False)
+    print(f"Lesion metadata saved to {output_path}")

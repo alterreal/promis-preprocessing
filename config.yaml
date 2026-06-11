@@ -120,7 +120,13 @@ sector_mapping:
     l_zone: null  # apex posterior left
     l_section: 'p'
 
-# Barzell to PI-RADS map
+# Barzell to PI-RADS map based according to Satish et al. (2021):
+# "Mapping Contemporary Biopsy Zones to Traditional Prostatic
+# Anatomy: The Key to Understanding Relationships Between
+# Prostate Cancer Topography, Magnetic Resonance Imaging
+# Conspicuity, and Clinical Risk"
+# DOI: https://doi.org/10.1016/j.eururo.2021.05.017
+
 barzell_to_pirads_map:
   1:
     - {l_region: 'A', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'a'}

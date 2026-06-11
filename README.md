@@ -8,7 +8,7 @@ The PROMIS dataset is a prostate MRI dataset available at reasonable request. It
 
 ## About the Location Priori
 
-Lesion location priori computation depend on the availability of prostate zone segmentation masks, which are not provided here. If provided, the location priori will be extracted according to both MRI and TPM CRFs, separately. Although lesion location is defined in the TPM CRF according to Barzell Zones, the extracted priori are defined according to the PI-RADS v2 sectors affected by the lesion. The conversion from Barzell zones to PI-RADS sectors is done according to the mapping proposed by [Satish et al. (2021)](https://doi.org/10.1016/j.eururo.2021.05.017). Because the Barzell zonal system does not distinguish the mid-gland as a separate axial region, the resulting PI-RADS sectors are assigned only to either the apex or the base, effectively splitting the gland along a halved axial axis.
+Lesion location priori computation depends on the availability of prostate zone segmentation masks, which are not provided here. If provided, the location priori will be extracted according to both MRI and TPM CRFs, separately. Although lesion location is defined in the TPM CRF according to Barzell Zones, the extracted priori are defined according to the PI-RADS v2 sectors affected by the lesion. The conversion from Barzell zones to PI-RADS sectors is done according to the mapping proposed by [Satish et al. (2021)](https://doi.org/10.1016/j.eururo.2021.05.017). Because the Barzell zonal system does not distinguish the mid-gland as a separate axial region, the resulting PI-RADS sectors are assigned only to either the apex or the base, effectively splitting the gland along a halved axial axis.
 
 ## Generalizability
 
@@ -33,10 +33,11 @@ pip install -e .
 
 ### 1. Configure the Pipeline
 
-Edit `config.yaml` to point the pipeline at your data and outputs. All paths are relative to `paths.root`, except where an absolute path is provided as an argument
+Edit `config.yaml` to point the pipeline at your data and outputs. All paths are relative to `paths.root`, except where an absolute path is given. Each script also accepts path overrides via command-line arguments (e.g. `--dicom-raw`, `--metadata`).
 
 You can also customize which MRI sequences to process and which one to use as the reference for resampling:
 
+```yaml
 # Series to process - customize which sequences you want
 series_to_process:
   t2_axial: "T2"
@@ -58,10 +59,10 @@ python scripts/extract_metadata.py
 python scripts/process_studies.py
 
 # Step 3: Compute location priori (using PI-RADS v2 sectors) of clinically significant lesions (ISUP ≥ 2) according to MRI and TPM CRFs. 
-python scripts/compute_location_priori.py --lesion-type cspca
+python scripts/compute_location_priori.py --label-type cspca
 
 # in case you want to extract the location priori for ISUP ≥ 1 lesions
-python scripts/compute_location_priori.py --lesion-type pca
+python scripts/compute_location_priori.py --label-type pca
 ```
 
 ## Output Structure

@@ -1,8 +1,8 @@
 """
-Core DICOM processing functions.
+DICOM processing functions.
 """
 
-import os
+from pathlib import Path
 import SimpleITK as sitk
 from tqdm import tqdm
 from datetime import datetime
@@ -28,9 +28,9 @@ def load_dicom_image_from_folder(reader, folder_path):
     return image
 
 
-def process_dicom_series(path, series_descriptions, base_path, log_file):
-    """Process a single DICOM series and return metadata or None if failed."""
-    from metadata_extractor import extract_metadata_from_reader
+def extract_metadata_from_dicom_series(path, series_descriptions, base_path, log_file):
+    """Extract metadata from a single DICOM series and return it as a dictionary or None if failed."""
+    from promis_preprocess.metadata_extraction import extract_metadata_from_reader
     
     reader = create_dicom_reader()
     
@@ -41,7 +41,7 @@ def process_dicom_series(path, series_descriptions, base_path, log_file):
         metadata = extract_metadata_from_reader(reader, image, path, series_descriptions, base_path)
         
         # Check for slice count mismatch 
-        num_files = len(os.listdir(path))
+        num_files = len(list(Path(path).iterdir()))
         num_slices = image.GetSize()[2]
         if num_files != num_slices:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -58,35 +58,35 @@ def process_dicom_series(path, series_descriptions, base_path, log_file):
         return None, str(e)
 
 
-def process_all_dicom_series(dicom_path, series_descriptions, output_path):
-    """Process all DICOM series in the given path."""
+def extract_metadata_from_all_dicom_series(dicom_path, series_descriptions):
+    """Extract metadata from all DICOM series in the given path."""
     metadata = []
     stats = {'processed': 0, 'errors': 0, 'warnings': 0}
     
-    # Ensure output directory exists
-    os.makedirs(output_path, exist_ok=True)
+    logs_dir = Path('logs')
+    logs_dir.mkdir(parents=True, exist_ok=True)
     
-    # Create log file
-    log_file = os.path.join(output_path, 'processing_log.txt')
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_file = logs_dir / f'log_{timestamp}.txt'
+
     with open(log_file, 'w') as f:
-        f.write(f"DICOM Processing Log - Started at {timestamp}\n")
+        f.write(f"DICOM Metadata Extraction Log - Started at {timestamp}\n")
         f.write("=" * 50 + "\n\n")
     
     # Get all DICOM directories that contain .dcm files
     dicom_dirs = []
-    for root, dirs, files in os.walk(dicom_path):
+    for root, dirs, files in Path(dicom_path).walk():
         if any(f.endswith('.dcm') for f in files):
             dicom_dirs.append(root)
     
     total_dirs = len(dicom_dirs)
     
-    print(f"Found {total_dirs} DICOM directories to process...")
+    print(f"\nFound {total_dirs} DICOM directories to process...")
     print(f"Logging to: {log_file}")
     
     with tqdm(total=total_dirs, desc="Processing DICOM", unit="dir") as pbar:
         for path in dicom_dirs:
-            result, error = process_dicom_series(path, series_descriptions, dicom_path, log_file)
+            result, error = extract_metadata_from_dicom_series(path, series_descriptions, dicom_path, log_file)
             
             if result is not None:
                 metadata.append(result)

@@ -16,5 +16,3 @@ def load_config(config_path=None):
         return yaml.safe_load(f)
 
 
-# Load and export the configuration
-config = load_config()

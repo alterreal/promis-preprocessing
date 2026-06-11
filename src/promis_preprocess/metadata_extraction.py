@@ -3,9 +3,33 @@ Metadata extraction and processing utilities.
 """
 
 import pandas as pd
-import os
-from .config_loader import config
+from pathlib import Path
+from .config_loader import load_config
 
+config = load_config()
+
+def get_isup_grade(gleason_primary, gleason_secondary):
+    """ Extracts the ISUP grade from the Gleason patterns."""
+
+    if pd.isna(gleason_primary) or pd.isna(gleason_secondary):
+        return None  
+
+    gleason_score = gleason_primary + gleason_secondary
+
+    if gleason_primary == 3 and gleason_secondary == 3:
+        return 1
+    elif gleason_primary == 3 and gleason_secondary == 4:
+        return 2
+    elif gleason_primary == 4 and gleason_secondary == 3:
+        return 3
+    elif gleason_score == 8:
+        return 4
+    elif gleason_score >= 9:
+        return 5
+    elif gleason_score < 6:
+        return 0
+    else:
+        return None
 
 def load_series_descriptions(series_descriptions_path):
     """Load and preprocess series descriptions from Excel file."""
@@ -41,19 +65,18 @@ def extract_metadata_from_reader(reader, image, path, series_descriptions, base_
         'magnetic_field_strength': reader.GetMetaData(0, config['dicom_tags']['magnetic_field_strength']),
         'series_description': series_description,
         'generic_sequence_label': generic_sequence_label,
-        'num_dicom_files': len(os.listdir(path)),
+        'num_dicom_files': len(list(Path(path).iterdir())),
         'num_loaded_slices': image.GetSize()[2],
         'size': image.GetSize(),
         'pixel_spacing': image.GetSpacing(),
-        'folder_path': os.path.relpath(path, base_path)
+        'folder_path': str(Path(path).relative_to(Path(base_path)))
     }
 
 
-def save_metadata_to_parquet(metadata, output_path, filename='series_metadata.parquet'):
+def save_metadata_to_parquet(metadata, output_parquet):
     """Save metadata to parquet file."""
     df_metadata = pd.DataFrame(metadata)
-    full_path = os.path.join(output_path, filename)
-    df_metadata.to_parquet(full_path)
-    print(f"Metadata saved to {full_path}")
+    df_metadata.to_parquet(output_parquet)
+    print(f"Metadata saved to {output_parquet}")
     print(f"DataFrame shape: {df_metadata.shape}")
     return df_metadata

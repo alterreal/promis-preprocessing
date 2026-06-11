@@ -13,19 +13,26 @@ dicom_tags:
 
 # Default paths
 paths:
-  series_descriptions: "/storage/data/PROMIS/PROMISseriesdescriptions.xlsx"
-  dicom_raw: "/storage/data/PROMIS/dicom_raw/"
-  dicom_processed: "/storage/data/PROMIS/processed/"
-  nnunet_output: "/storage/data/PROMIS/nnunet/nnUNet_raw/Dataset051_ProstateAllZones/imagesTs/"
-  metadata: "/storage/data/PROMIS/metadata/"
-  mri_crf: "/storage/data/PROMIS/resources/additional_data/OA_575 complete patients/OA_575 complete patients/MRI Data/PROMIS_OA_MRICRF_Downloaded04Feb2020.xlsx"
-  tpm_crf_folder: "/storage/data/PROMIS/resources/additional_data/OA_575 complete patients/OA_575 complete patients/TPM Data"
+  root: "/storage/data/PROMIS/"
+  series_descriptions: "PROMISseriesdescriptions.xlsx"
+  dicom_raw: "dicom_raw"
+  dicom_processed: "processed"
+  zonal_masks: "predictions/prostate_zonal_masks/"
+  nnunet_output: "/storage/data/PROMIS/nnunet/nnUNet_raw/Dataset051_ProstateAllZones/imagesTs"
+  metadata: "metadata/series_metadata.parquet"
+  mri_crf: "resources/additional_data/OA_575 complete patients/OA_575 complete patients/MRI Data/PROMIS_OA_MRICRF_Downloaded04Feb2020.xlsx"
+  tpm_crf_folder: "resources/additional_data/OA_575 complete patients/OA_575 complete patients/TPM Data"
+  tpm_crf_summary: "resources/additional_data/OA_575 complete patients/OA_575 complete patients/TPM Data/PROMIS_OA_TPMSummary_Downloaded05Mar2020.xlsx"
+  location_priori_cspca_mri: "location_priori/cspca/mri/"
+  location_priori_cspca_tpm: "location_priori/cspca/tpm/"
+  location_priori_pca_mri: "location_priori/pca/mri/"
+  location_priori_pca_tpm: "location_priori/pca/tpm/"
 
 # Series to process
 series_to_process:
   t2_axial: "T2"
-  #dwi_b1400_axial: "DWI"
-  #adc_axial: "ADC"
+  dwi_b1400_axial: "DWI"
+  adc_axial: "ADC"
 
 # For nnUNet training, we need to map the series to a number
 nnunet_series_dict:
@@ -35,3 +42,131 @@ nnunet_series_dict:
 
 # Reference series for resampling
 reference_series: "t2_axial"
+
+# All TPM zone files
+tpm_zone_files: [
+  'PROMIS_OA_TPM_Zones_Lateral_downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_LeftMedialAnterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_LeftMedialPosterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_LeftParasagitalAnterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_LeftParasagitalPosterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_Midline_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_RightMedialAnterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_RightMedialPosterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_RightParasagitalAnterior_Downloaded05Mar2020.xlsx',
+  'PROMIS_OA_TPM_Zones_RightParasagitalPosterior_Downloaded05Mar2020.xlsx',
+  ]
+
+# Dictionary to map MRI scores (T2+DWI+DCE) locations to PI-RADS prostate sectors (descriptors:region, side, zone, section)
+sector_mapping:
+  base_5:
+    l_region: 'B'
+    l_side: 'R'
+    l_zone: null  # base anterior right
+    l_section: 'a'
+  base_6:
+    l_region: 'B'
+    l_side: 'L'
+    l_zone: null  # base anterior left
+    l_section: 'a'
+  base_11:
+    l_region: 'B'
+    l_side: 'R'
+    l_zone: null  # base posterior right
+    l_section: 'p'
+  base_12:
+    l_region: 'B'
+    l_side: 'L'
+    l_zone: null  # base posterior left
+    l_section: 'p'
+  mid_d3:
+    l_region: 'M'
+    l_side: 'R'
+    l_zone: null  # mid anterior right
+    l_section: 'a'
+  mid_d4:
+    l_region: 'M'
+    l_side: 'L'
+    l_zone: null  # mid anterior left
+    l_section: 'a'
+  mid_d7:
+    l_region: 'M'
+    l_side: 'R'
+    l_zone: null  # mid posterior right
+    l_section: 'p'
+  mid_d8:
+    l_region: 'M'
+    l_side: 'L'
+    l_zone: null  # mid posterior left
+    l_section: 'p'
+  apex_5:
+    l_region: 'A'
+    l_side: 'R'
+    l_zone: null  # apex anterior right
+    l_section: 'a'
+  apex_6:
+    l_region: 'A'
+    l_side: 'L'
+    l_zone: null  # apex anterior left
+    l_section: 'a'
+  apex_11:
+    l_region: 'A'
+    l_side: 'R'
+    l_zone: null  # apex posterior right
+    l_section: 'p'
+  apex_12:
+    l_region: 'A'
+    l_side: 'L'
+    l_zone: null  # apex posterior left
+    l_section: 'p'
+
+# Barzell to PI-RADS map
+barzell_to_pirads_map:
+  1:
+    - {l_region: 'A', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'a'}
+    - {l_region: 'A', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'p'}
+  2:
+    - {l_region: 'B', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'a'}
+    - {l_region: 'B', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'p'}
+  3:
+    - {l_region: 'A', l_side: 'R', l_zone: 'TZ+CZ', l_section: 'a'}
+    - {l_region: 'A', l_side: 'R', l_zone: 'TZ+CZ', l_section: 'p'}
+  4:
+    - {l_region: 'B', l_side: 'R', l_zone: 'TZ+CZ', l_section: 'a'}
+    - {l_region: 'B', l_side: 'R', l_zone: 'TZ+CZ', l_section: 'p'}
+  5:
+    - {l_region: 'A', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'p'}
+    - {l_region: 'A', l_side: 'R', l_zone: 'TZ+CZ', l_section: 'p'}
+  6:
+    - {l_region: 'B', l_side: 'L', l_zone: 'TZ+CZ', l_section: 'p'}
+    - {l_region: 'B', l_side: 'R', l_zone: 'TZ+CZ', l_section: 'p'}
+  7:
+    - {l_region: 'A', l_side: 'L', l_zone: 'PZ', l_section: 'a'}
+  8:
+    - {l_region: 'B', l_side: 'L', l_zone: 'PZ', l_section: 'a'}
+  9:
+    - {l_region: 'A', l_side: 'R', l_zone: 'PZ', l_section: 'a'}
+  10:
+    - {l_region: 'B', l_side: 'R', l_zone: 'PZ', l_section: 'a'}
+  11:
+    - {l_region: 'B', l_side: 'L', l_zone: 'PZ', l_section: 'a'}
+    - {l_region: 'B', l_side: 'L', l_zone: 'PZ', l_section: 'p'}
+  12:
+    - {l_region: 'B', l_side: 'R', l_zone: 'PZ', l_section: 'a'}
+    - {l_region: 'B', l_side: 'R', l_zone: 'PZ', l_section: 'p'}
+  13:
+    - {l_region: 'A', l_side: 'L', l_zone: 'PZ', l_section: 'p'}
+  14:
+    - {l_region: 'B', l_side: 'L', l_zone: 'PZ', l_section: 'p'}
+  15:
+    - {l_region: 'A', l_side: 'R', l_zone: 'PZ', l_section: 'p'}
+  16:
+    - {l_region: 'B', l_side: 'R', l_zone: 'PZ', l_section: 'p'}
+  17:
+    - {l_region: 'A', l_side: 'L', l_zone: 'PZ', l_section: 'p'}
+  18:
+    - {l_region: 'B', l_side: 'L', l_zone: 'PZ', l_section: 'p'}
+  19:
+    - {l_region: 'A', l_side: 'R', l_zone: 'PZ', l_section: 'p'}
+  20:
+    - {l_region: 'B', l_side: 'R', l_zone: 'PZ', l_section: 'p'}

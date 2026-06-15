@@ -9,7 +9,7 @@ This is a simple Python pipeline for preprocessing the [PROMIS (Prostate MR Imag
 
 ## About PROMIS Dataset
 
-The PROMIS dataset is a prostate MRI dataset available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from 575 patients.
+The PROMIS dataset is a prostate MRI dataset available at reasonable request. It contains multi-parametric MRI sequences including T2-weighted, DWI, and ADC images from 575 patients. You can apply for access [here](https://ucl-ncita-xnat.cs.ucl.ac.uk/app/template/Login.vm#!).
 
 ## About the Location Priori
 

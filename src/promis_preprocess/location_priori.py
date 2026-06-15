@@ -248,7 +248,7 @@ def merge_zonal_masks(mask_tz_cz_arr, mask_pz_arr):
 
     # Fill small holes in prostate segmentation mask
     mask_prostate_arr_filled = np.stack([
-        remove_small_holes(slice.astype(bool), area_threshold=512, connectivity=2)
+        remove_small_holes(slice.astype(bool), max_size=511, connectivity=2)
         for slice in mask_prostate_arr
     ])
 

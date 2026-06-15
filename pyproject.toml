@@ -13,9 +13,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "SimpleITK>=2.3.0",
+    "connected-components-3d>=2.7.0",
     "pandas>=1.5.0",
     "openpyxl>=3.0.0",
     "pyarrow>=10.0.0",
+    "scikit-image>=0.22.0",
+    "scipy>=1.11.0",
     "tqdm>=4.64.0",
     "PyYAML>=6.0.0",
 ]

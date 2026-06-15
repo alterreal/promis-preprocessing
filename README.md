@@ -23,17 +23,6 @@ While specifically designed for the PROMIS dataset, this pipeline can be adapted
 - **Series Description**: Original series description from DICOM metadata
 - **Generic Sequence Label**: Standardized label for the sequence type
 
-## Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd promis_preprocess
-
-# Install dependencies
-pip install -e .
-```
-
 ## Usage
 
 ### 1. Configure the Pipeline
@@ -58,16 +47,16 @@ reference_series: "t2_axial"
 
 ```bash
 # Step 1: Extract metadata from DICOM seriea
-python scripts/extract_metadata.py
+uv run python scripts/extract_metadata.py
 
 # Step 2: Process studies with all the selected sequences and resample to reference series
-python scripts/process_studies.py
+uv run python scripts/process_studies.py
 
 # Step 3: Compute location priori (using PI-RADS v2 sectors) of clinically significant lesions (ISUP ≥ 2) according to MRI and TPM CRFs. 
-python scripts/compute_location_priori.py --label-type cspca
+uv run python scripts/compute_location_priori.py --label-type cspca
 
 # in case you want to extract the location priori for ISUP ≥ 1 lesions
-python scripts/compute_location_priori.py --label-type pca
+uv run python scripts/compute_location_priori.py --label-type pca
 ```
 
 ## Output Structure

@@ -2,8 +2,9 @@ import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 import SimpleITK as sitk
+import numpy as np
 from .dicom_processing import create_dicom_reader, load_dicom_image_from_folder
-
+from .zonal_masks import load_zone_predictions, keep_components_in_contact, keep_components_in_mid_x_region
 
 """
 Study processing functions.
@@ -35,15 +36,47 @@ def select_single_series_per_type(metadata, series_to_process):
     return pd.DataFrame(res)
 
 
-def process_and_save_studies(metadata, series_to_process, reference_series, dicom_raw_path, dicom_processed_path, nnunet_output=False, nnunet_output_path=None, nnunet_series_dict=None):
+def process_and_save_studies(
+    metadata, 
+    series_to_process, 
+    reference_series, 
+    dicom_raw_path, 
+    dicom_processed_path, 
+    nnunet_output=False, 
+    nnunet_output_path=None, 
+    nnunet_series_dict=None, 
+    zone_predictions_path=None
+    ):
     """
     Processes and saves images in MetaImage Header (.mha) format for each study in the provided metadata DataFrame.
     All series are resampled to the reference series.
     """
-    
+
+    discarded_cases = []
+
     for study_id, study_metadata in tqdm(metadata.groupby('study_id'), 
                                        total=metadata['study_id'].nunique(), 
                                        desc="Processing studies"):
+
+        # first check if zonal mask is valid (if provided)
+        if zone_predictions_path is not None:
+
+            mask_tz_cz, mask_pz = load_zone_predictions(zone_predictions_path / f'{study_id}.mha')
+            
+            mask_tz_cz_arr = sitk.GetArrayFromImage(mask_tz_cz)
+            mask_pz_arr = sitk.GetArrayFromImage(mask_pz)
+
+            # Keep only components from each mask that are in contact with components from the other mask
+            mask_tz_cz_arr, mask_pz_arr = keep_components_in_contact(mask_tz_cz_arr, mask_pz_arr)
+
+            # Keep only components that intersect the mid x region (with 10% margin)
+            mask_tz_cz_arr = keep_components_in_mid_x_region(mask_tz_cz_arr, margin_ratio=0.1)
+            mask_pz_arr = keep_components_in_mid_x_region(mask_pz_arr, margin_ratio=0.1)
+
+            if len(np.unique(mask_tz_cz_arr)) != 2 or len(np.unique(mask_tz_cz_arr)) != 2:
+                discarded_cases.append(study_id)
+                continue
+
         # Prepare save path
         patient_id = study_metadata.iloc[0]['patient_id']
         
@@ -88,3 +121,5 @@ def process_and_save_studies(metadata, series_to_process, reference_series, dico
             # Save resampled image
             add_output_path = base_output_dir / make_filename(seq_type)
             sitk.WriteImage(resampled_image, add_output_path)
+
+    return discarded_cases

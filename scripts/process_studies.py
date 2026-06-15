@@ -29,6 +29,12 @@ def main():
                        type=str,
                        default=None,
                        help='Path to processed DICOM data')
+    parser.add_argument(
+                        '--zone-predictions', 
+                        type=str, 
+                        default=None, 
+                        help='Path to the zone predictions. If provided, only cases with valid zonal mask will be processed'
+                        )
     parser.add_argument('--nnunet-output', 
                        action='store_true',
                        help='If set, output in nnUNet format')
@@ -45,6 +51,8 @@ def main():
         args.dicom_raw = Path(config['paths']['root']) / config['paths']['dicom_raw']
     if args.metadata is None:
         args.metadata = Path(config['paths']['root']) / config['paths']['metadata']
+    if args.zone_predictions is None:
+        args.zone_predictions = Path(config['paths']['root']) / config['paths']['zonal_masks']
 
     # set nnunet output path
     nnunet_output_path = Path(config['paths']['root']) / config['paths']['nnunet_output']
@@ -79,16 +87,19 @@ def main():
 
     # Process and save studies
     print(">>> Processing studies...")
-    process_and_save_studies(
+    discarded_cases = process_and_save_studies(
         metadata_filtered, 
         config['series_to_process'], 
         config['reference_series'], 
         args.dicom_raw, args.dicom_processed, 
         nnunet_output=args.nnunet_output, 
         nnunet_output_path=nnunet_output_path, 
-        nnunet_series_dict=config['nnunet_series_dict']
+        nnunet_series_dict=config['nnunet_series_dict'],
+        zone_predictions_path=args.zone_predictions
         )
-    
+    if args.zone_predictions is not None:
+        print(f"Discarded {len(discarded_cases)} studies due to invalid zonal masks")
+        
     print(">>> Processing completed successfully!")
 
 

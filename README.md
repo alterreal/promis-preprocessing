@@ -1,6 +1,11 @@
 # PROMIS Dataset Preprocessing Pipeline
 
-This is a simple Python pipeline for preprocessing the [PROMIS (Prostate MR Image Segmentation)](https://www.reimagine-pca.org/about-7) dataset. It handles DICOM medical imaging data with metadata extraction, series organization, ML-ready data preparation and lesion location priori extraction from MRI and TPM CRFs. 
+This is a simple Python pipeline for preprocessing the [PROMIS (Prostate MR Image Segmentation)](https://www.reimagine-pca.org/about-7) dataset. It handles DICOM medical imaging data with:
+
+1. Metadata extraction
+2. Series organization
+3. Resampling
+4. Lesion location priori extraction from MRI and TPM CRFs. 
 
 ## About PROMIS Dataset
 
@@ -81,9 +86,10 @@ processed/
 └── patient_002/
     └── ...
 
-metadata/
-├── series_metadata.parquet    # Comprehensive metadata
-├── lesion_pca_metadata.txt         # Metadata for ISUP ≥ 1 lesions
-└── lesion_cspca_metadata.txt         # Metadata for ISUP ≥ 2 lesions
+metadata/series_metadata.parquet    # Series metadata
+
 ```
+
+If `--nnunet-output` is passed to `process_studies.py`, images are written in nnUNet format to the directory configured in `paths.nnunet_output`. All studies are saved in a single flat folder using the naming convention `{study_id}_{channel}.mha`, where channels are mapped via `nnunet_series_dict` in `config.yaml` (e.g. `study_001_0000.mha` for T2, `study_001_0001.mha` for DWI, `study_001_0002.mha` for ADC). Series are still resampled to the reference series before saving.
+
 

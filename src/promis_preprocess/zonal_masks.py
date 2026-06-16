@@ -167,6 +167,8 @@ def keep_components_in_mid_x_region(mask, margin_ratio=0.1, connectivity=26):
         margin = width * margin_ratio
         x_min = int(mid_x - margin)
         x_max = int(mid_x + margin)
+
+        passed_count = 0
         
         # Find which components intersect the mid x region
         unique_labels = np.unique(labels[labels > 0])
@@ -178,5 +180,6 @@ def keep_components_in_mid_x_region(mask, margin_ratio=0.1, connectivity=26):
             if np.any(component_slice):
                 # Keep this component, preserving original values
                 mask_result[component] = mask[component]
+                passed_count += 1
     
-    return mask_result
+    return mask_result, passed_count

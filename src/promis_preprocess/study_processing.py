@@ -70,8 +70,8 @@ def process_and_save_studies(
             mask_tz_cz_arr, mask_pz_arr = keep_components_in_contact(mask_tz_cz_arr, mask_pz_arr)
 
             # Keep only components that intersect the mid x region (with 10% margin)
-            mask_tz_cz_arr = keep_components_in_mid_x_region(mask_tz_cz_arr, margin_ratio=0.1)
-            mask_pz_arr = keep_components_in_mid_x_region(mask_pz_arr, margin_ratio=0.1)
+            mask_tz_cz_arr, passed_tz_cz = keep_components_in_mid_x_region(mask_tz_cz_arr, margin_ratio=0.1)
+            mask_pz_arr, passed_pz = keep_components_in_mid_x_region(mask_pz_arr, margin_ratio=0.1)
 
             if len(np.unique(mask_tz_cz_arr)) != 2 or len(np.unique(mask_tz_cz_arr)) != 2:
                 discarded_cases.append(study_id)
